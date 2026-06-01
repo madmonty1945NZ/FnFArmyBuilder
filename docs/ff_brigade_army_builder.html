@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fire & Fury — Brigade Army Builder</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --parchment: #f5ead6;
+    --parchment-dark: #e8d5b0;
+    --ink: #1a1008;
+    --ink-faded: #4a3820;
+    --crimson: #8b1a1a;
+    --union-blue: #1a3a5c;
+    --union-light: #2a5a8c;
+    --gold: #c8941a;
+    --gold-light: #e8b840;
+    --border: #8b6914;
+    --shadow: rgba(26,16,8,0.25);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--ink);
+    font-family: 'Source Serif 4', serif;
+    color: var(--ink);
+    min-height: 100vh;
+    background-image: 
+      radial-gradient(ellipse at 20% 20%, #2a1a08 0%, transparent 60%),
+      radial-gradient(ellipse at 80% 80%, #1a2a3a 0%, transparent 60%),
+      repeating-linear-gradient(45deg, transparent, transparent 2px, rgba(255,255,255,0.01) 2px, rgba(255,255,255,0.01) 4px);
+  }
+
+  .page-wrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 24px 16px 60px;
+  }
+
+  /* Header */
+  header {
+    text-align: center;
+    padding: 36px 24px 28px;
+    background: var(--parchment);
+    background-image: url("data:image/svg+xml,%3Csvg width='400' height='400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='400' height='400' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+    border: 3px solid var(--border);
+    border-bottom: none;
+    position: relative;
+    clip-path: polygon(0 0, 100% 0, 100% calc(100% - 12px), calc(100% - 12px) 100%, 12px 100%, 0 calc(100% - 12px));
+  }
+
+  header::before {
+    content: '⚔';
+    display: block;
+    font-size: 28px;
+    margin-bottom: 8px;
+    color: var(--crimson);
+  }
+
+  header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 900;
+    color: var(--ink);
+    letter-spacing: 0.04em;
+    line-height: 1.1;
+  }
+
+  header h1 span { color: var(--crimson); }
+
+  header .subtitle {
+    font-size: 0.85rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  header .version {
+    position: absolute;
+    top: 12px;
+    right: 16px;
+    font-size: 0.7rem;
+    color: var(--border);
+    letter-spacing: 0.1em;
+    font-family: 'Playfair Display', serif;
+  }
+
+  /* Main panel */
+  .main-panel {
+    background: var(--parchment);
+    border: 3px solid var(--border);
+    padding: 0;
+  }
+
+  /* Section header */
+  .section-head {
+    background: var(--union-blue);
+    color: var(--parchment);
+    padding: 10px 20px;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border-bottom: 2px solid var(--gold);
+  }
+
+  .section-head .dot {
+    width: 8px; height: 8px;
+    background: var(--gold);
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Global settings */
+  .global-settings {
+    padding: 20px 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    border-bottom: 2px solid var(--parchment-dark);
+    background: linear-gradient(to bottom, rgba(200,148,26,0.05), transparent);
+  }
+
+  .field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  label {
+    font-size: 0.7rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    font-weight: 600;
+  }
+
+  label .step-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px; height: 16px;
+    background: var(--crimson);
+    color: white;
+    border-radius: 50%;
+    font-size: 0.6rem;
+    margin-right: 4px;
+    font-weight: 700;
+  }
+
+  select, input[type="text"], input[type="number"] {
+    font-family: 'Source Serif 4', serif;
+    font-size: 0.9rem;
+    padding: 7px 10px;
+    background: white;
+    border: 1.5px solid var(--border);
+    color: var(--ink);
+    border-radius: 2px;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    width: 100%;
+  }
+
+  select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b6914'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 28px; }
+
+  select:focus, input:focus { outline: none; border-color: var(--union-blue); box-shadow: 0 0 0 3px rgba(26,58,92,0.15); }
+
+  .period-hint {
+    font-size: 0.72rem;
+    color: var(--ink-faded);
+    font-style: italic;
+    margin-top: 2px;
+  }
+
+  /* Modifier table */
+  .modifier-box {
+    margin: 0 24px 20px;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    border-radius: 2px;
+  }
+
+  .modifier-box table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+  }
+
+  .modifier-box th {
+    background: var(--ink-faded);
+    color: var(--parchment);
+    padding: 5px 10px;
+    text-align: center;
+    letter-spacing: 0.08em;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+  }
+
+  .modifier-box td {
+    padding: 4px 10px;
+    text-align: center;
+    border-top: 1px solid var(--parchment-dark);
+  }
+
+  .modifier-box tr:nth-child(even) td { background: rgba(0,0,0,0.03); }
+
+  .highlight-cell { background: rgba(200,148,26,0.18) !important; font-weight: 700; color: var(--crimson); }
+
+  /* Leaders */
+  .leaders-row {
+    padding: 16px 24px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 20px;
+    border-bottom: 2px solid var(--parchment-dark);
+  }
+
+  .leader-card {
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .leader-card-head {
+    background: var(--union-blue);
+    color: var(--gold-light);
+    padding: 7px 12px;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .leader-card-body {
+    padding: 12px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    background: white;
+  }
+
+  /* Divisions */
+  .divisions-area { padding: 16px 24px 24px; }
+
+  .division-block {
+    border: 2px solid var(--border);
+    border-radius: 2px;
+    margin-bottom: 24px;
+    overflow: hidden;
+  }
+
+  .division-header {
+    background: linear-gradient(to right, var(--union-blue), #1e4a72);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .division-header h3 {
+    font-family: 'Playfair Display', serif;
+    color: var(--gold-light);
+    font-size: 1rem;
+    letter-spacing: 0.06em;
+    flex-shrink: 0;
+  }
+
+  .division-header input, .division-header select {
+    border-color: rgba(200,148,26,0.5);
+    background: rgba(255,255,255,0.12);
+    color: white;
+    font-size: 0.85rem;
+    padding: 5px 8px;
+  }
+
+  .division-header select option { background: var(--ink); color: white; }
+
+  .division-header input::placeholder { color: rgba(255,255,255,0.5); }
+
+  .division-header input:focus, .division-header select:focus {
+    border-color: var(--gold);
+    box-shadow: 0 0 0 2px rgba(200,148,26,0.3);
+    background: rgba(255,255,255,0.18);
+  }
+
+  /* Brigade table */
+  .brigade-table-wrap { overflow-x: auto; }
+
+  .brigade-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    min-width: 900px;
+  }
+
+  .brigade-table thead tr {
+    background: var(--parchment-dark);
+  }
+
+  .brigade-table th {
+    padding: 7px 8px;
+    text-align: center;
+    font-size: 0.65rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--ink-faded);
+    font-weight: 700;
+    border-bottom: 1.5px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .brigade-table td {
+    padding: 5px 6px;
+    text-align: center;
+    border-bottom: 1px solid var(--parchment-dark);
+    vertical-align: middle;
+  }
+
+  .brigade-table tr:last-child td { border-bottom: none; }
+  .brigade-table tr:nth-child(even) td { background: rgba(0,0,0,0.02); }
+
+  .brigade-table td:first-child {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    color: var(--crimson);
+    font-size: 0.85rem;
+    width: 28px;
+  }
+
+  .brigade-table select, .brigade-table input {
+    font-size: 0.78rem;
+    padding: 4px 6px;
+    min-width: 60px;
+    width: 100%;
+  }
+
+  .brigade-table select { min-width: 70px; }
+
+  td.stat-cell {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  td.stat-fresh { color: #1a6b1a; }
+  td.stat-worn  { color: #8b5a00; }
+  td.stat-spent { color: var(--crimson); }
+  td.stat-bases { color: var(--union-blue); font-size: 1.1rem; }
+  td.stat-invalid { color: #ccc; font-size: 0.7rem; font-style: italic; }
+
+  /* Summary cards */
+  .summary-area {
+    padding: 20px 24px;
+    background: linear-gradient(to bottom, rgba(26,58,92,0.06), transparent);
+    border-top: 2px solid var(--border);
+  }
+
+  .summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+  }
+
+  .summary-card {
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+
+  .summary-card-head {
+    background: var(--crimson);
+    color: var(--parchment);
+    padding: 6px 12px;
+    font-family: 'Playfair Display', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+  }
+
+  .summary-card-body {
+    background: white;
+    padding: 12px;
+  }
+
+  .stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 3px 0;
+    border-bottom: 1px dotted var(--parchment-dark);
+    font-size: 0.82rem;
+  }
+
+  .stat-row:last-child { border-bottom: none; }
+  .stat-row .val { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1rem; }
+  .stat-row .val.green { color: #1a6b1a; }
+  .stat-row .val.amber { color: #8b5a00; }
+  .stat-row .val.red { color: var(--crimson); }
+  .stat-row .val.blue { color: var(--union-blue); }
+
+  /* Brigade mini-cards */
+  .brigade-cards-area {
+    padding: 0 24px 24px;
+    border-top: 2px solid var(--border);
+  }
+
+  .brigade-cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+    margin-top: 16px;
+  }
+
+  .bcard {
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    background: white;
+    font-size: 0.78rem;
+    transition: transform 0.15s, box-shadow 0.15s;
+  }
+
+  .bcard:hover { transform: translateY(-2px); box-shadow: 0 4px 16px var(--shadow); }
+
+  .bcard-head {
+    padding: 7px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: var(--parchment);
+  }
+
+  .bcard-head.infantry { background: var(--union-blue); }
+  .bcard-head.cavalry  { background: #3a5a2a; }
+  .bcard-head.artillery{ background: #6b3a1a; }
+
+  .bcard-name { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 0.85rem; }
+  .bcard-type { font-size: 0.68rem; letter-spacing: 0.08em; opacity: 0.85; }
+
+  .bcard-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    text-align: center;
+    border-top: 1px solid var(--parchment-dark);
+  }
+
+  .bcard-stat {
+    padding: 8px 4px;
+    border-right: 1px solid var(--parchment-dark);
+  }
+  .bcard-stat:last-child { border-right: none; }
+
+  .bcard-stat-label { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--ink-faded); display: block; }
+  .bcard-stat-val { font-family: 'Playfair Display', serif; font-weight: 700; font-size: 1.2rem; }
+  .bcard-stat-val.green { color: #1a6b1a; }
+  .bcard-stat-val.amber { color: #8b5a00; }
+  .bcard-stat-val.red   { color: var(--crimson); }
+
+  .bcard-footer {
+    padding: 5px 10px;
+    background: var(--parchment-dark);
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.68rem;
+    color: var(--ink-faded);
+  }
+
+  .bcard-bases {
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 1.1rem;
+    color: var(--union-blue);
+  }
+
+  /* Buttons */
+  .btn {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    border: 1.5px solid;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .btn-primary { background: var(--union-blue); color: var(--gold-light); border-color: var(--gold); }
+  .btn-primary:hover { background: var(--union-light); }
+  .btn-danger { background: transparent; color: var(--crimson); border-color: var(--crimson); font-size: 0.7rem; padding: 4px 10px; }
+  .btn-danger:hover { background: var(--crimson); color: white; }
+  .btn-reset {
+    background: transparent;
+    color: var(--crimson);
+    border-color: var(--crimson);
+    font-family: 'Playfair Display', serif;
+    font-size: 0.72rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 5px 14px;
+    border: 1.5px solid;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .btn-reset:hover { background: var(--crimson); color: white; }
+  .btn-save { color: var(--union-blue); border-color: var(--union-blue); }
+  .btn-save:hover { background: var(--union-blue) !important; color: white !important; }
+
+  /* Add brigade bar */
+  .add-brigade-bar {
+    padding: 10px 16px;
+    background: var(--parchment-dark);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-add-brigade {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 6px 18px;
+    background: var(--union-blue);
+    color: var(--gold-light);
+    border: 1.5px solid var(--gold);
+    border-radius: 2px;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .btn-add-brigade:hover { background: var(--union-light); transform: translateY(-1px); }
+  .btn-add-brigade:active { transform: translateY(0); }
+
+  /* Delete row button */
+  .btn-delete-row {
+    background: transparent;
+    border: 1px solid transparent;
+    color: #bbb;
+    font-size: 0.7rem;
+    width: 22px;
+    height: 22px;
+    border-radius: 2px;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    transition: all 0.12s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: auto;
+  }
+
+  .btn-delete-row:hover { background: var(--crimson); color: white; border-color: var(--crimson); }
+
+  /* Confirm modal */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(26,16,8,0.7);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+  .modal-box {
+    background: var(--parchment);
+    border: 2.5px solid var(--border);
+    border-radius: 2px;
+    padding: 32px 36px;
+    max-width: 380px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(26,16,8,0.5);
+  }
+  .modal-box .modal-icon { font-size: 2rem; margin-bottom: 10px; }
+  .modal-box h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.2rem;
+    color: var(--crimson);
+    margin-bottom: 8px;
+  }
+  .modal-box p {
+    font-size: 0.83rem;
+    color: var(--ink-faded);
+    line-height: 1.5;
+    margin-bottom: 24px;
+  }
+  .modal-actions { display: flex; gap: 12px; justify-content: center; }
+  .modal-confirm {
+    background: var(--crimson);
+    color: white;
+    border: 1.5px solid var(--crimson);
+    font-family: 'Playfair Display', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: opacity 0.15s;
+  }
+  .modal-confirm:hover { opacity: 0.85; }
+  .modal-cancel {
+    background: transparent;
+    color: var(--ink-faded);
+    border: 1.5px solid var(--border);
+    font-family: 'Playfair Display', serif;
+    font-size: 0.8rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 8px 20px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .modal-cancel:hover { border-color: var(--ink-faded); color: var(--ink); }
+
+  /* Instructions */
+  .instructions {
+    padding: 14px 24px;
+    background: rgba(200,148,26,0.08);
+    border-bottom: 1px solid var(--parchment-dark);
+    font-size: 0.78rem;
+    color: var(--ink-faded);
+    line-height: 1.5;
+    font-style: italic;
+  }
+
+  .instructions strong { color: var(--crimson); font-style: normal; }
+
+  .loading-overlay {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    inset: 0;
+    background: rgba(245,234,214,0.95);
+    z-index: 2000;
+  }
+
+  .loading-overlay.hidden,
+  .error-overlay.hidden { display: none; }
+
+  .loading-box,
+  .error-box {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 18px 24px;
+    background: var(--parchment);
+    color: var(--ink);
+    border: 2px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 16px 48px rgba(26,16,8,0.25);
+    font-size: 0.95rem;
+    font-weight: 700;
+    flex-direction: column;
+    max-width: 92%;
+    text-align: center;
+  }
+
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 4px solid var(--border);
+    border-top-color: var(--union-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  .error-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .error-actions button {
+    padding: 8px 16px;
+    border: 1.5px solid var(--border);
+    border-radius: 2px;
+    background: white;
+    color: var(--ink);
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .error-actions button:hover {
+    background: var(--union-blue);
+    color: white;
+  }
+
+  .loading-spinner {
+    width: 24px;
+    height: 24px;
+    border: 4px solid var(--border);
+    border-top-color: var(--union-blue);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+
+  footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    color: rgba(200,148,26,0.5);
+    text-transform: uppercase;
+    font-family: 'Playfair Display', serif;
+  }
+
+  @media (max-width: 600px) {
+    .global-settings { grid-template-columns: 1fr 1fr; }
+    .leaders-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page-wrapper">
+
+<header>
+  <div class="version">v1.2</div>
+  <h1>Fire &amp; <span>Fury</span></h1>
+  <div class="subtitle">Brigade &amp; Battery — Army Builder · ACW</div>
+</header>
+
+<div class="main-panel">
+
+  <!-- Instructions -->
+  <div class="instructions" style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+    <span>Follow the numbered steps <strong>①②③...</strong> to configure your army. Cells marked in yellow are calculated automatically.
+    For a 6×4 table (2–3 players) use Scale <strong>150</strong>. Larger tables use <strong>200–250</strong>.
+    Scale and Period directly affect base counts.</span>
+    <div style="display:flex;gap:8px;flex-shrink:0">
+      <button class="btn-reset btn-save" onclick="saveCSV()" title="Download army details as CSV">&#8595; Save CSV</button>
+      <button class="btn-reset" onclick="showResetModal()" title="Clear all division leaders and brigade details">&#10005; Reset Army</button>
+    </div>
+  </div>
+
+  <!-- Global Settings -->
+  <div class="section-head"><div class="dot"></div>Army Configuration</div>
+  <div class="global-settings">
+    <div class="field-group">
+      <label><span class="step-num">1</span> Army</label>
+      <select id="g-army" onchange="updateAll()">
+        <option value="Union">Union</option>
+        <option value="Confederates">Confederates</option>
+      </select>
+      <div class="period-hint" id="army-hint">Damn Yanks!</div>
+    </div>
+    <div class="field-group">
+      <label><span class="step-num">2</span> Period</label>
+      <select id="g-period" onchange="updateAll()">
+        <option value="Early">Early (1861–1862)</option>
+        <option value="Mid" selected>Mid (1862–1863)</option>
+        <option value="Late">Late (1863–1865)</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label><span class="step-num">3</span> Theatre</label>
+      <select id="g-theatre" onchange="updateAll()">
+        <option value="Western" selected>Western</option>
+        <option value="Eastern">Eastern</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label><span class="step-num">4</span> Scale</label>
+      <select id="g-scale" onchange="updateAll()">
+        <option value="150" selected>150 — Default</option>
+        <option value="200">200 — Large</option>
+      </select>
+    </div>
+    <div class="field-group">
+      <label>Corp Leader</label>
+      <input type="text" id="g-corp" value="" placeholder="Corp leader name…">
+    </div>
+  </div>
+
+  <!-- Historical modifiers table -->
+  <div class="modifier-box" style="margin-top:4px">
+    <table id="mod-table">
+      <thead>
+        <tr>
+          <th>Side</th><th>Early</th><th>Mid</th><th>Late</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>Union</strong></td>
+          <td id="m-u-e">0</td>
+          <td id="m-u-m">+2</td>
+          <td id="m-u-l">+1</td>
+        </tr>
+        <tr>
+          <td><strong>Confederate</strong></td>
+          <td id="m-c-e">+2</td>
+          <td id="m-c-m">+1</td>
+          <td id="m-c-l">0</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Leaders -->
+  <div class="section-head" style="margin-top:2px"><div class="dot"></div>Division Leaders</div>
+  <div class="leaders-row">
+    <div class="leader-card">
+      <div class="leader-card-head">Division One <span style="opacity:0.7;font-size:0.7rem">Leader</span></div>
+      <div class="leader-card-body">
+        <div class="field-group">
+          <label>Name</label>
+          <input type="text" id="div1-leader" value="" placeholder="Leader name…" onblur="updateLeader(0, this.value)">
+        </div>
+        <div class="field-group">
+          <label>Rating</label>
+          <select id="div1-rating" onchange="updateDivRating(0, this.value)">
+            <option value="Normal" selected>Normal</option>
+            <option value="Exceptional">Exceptional</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="leader-card">
+      <div class="leader-card-head">Division Two <span style="opacity:0.7;font-size:0.7rem">Leader</span></div>
+      <div class="leader-card-body">
+        <div class="field-group">
+          <label>Name</label>
+          <input type="text" id="div2-leader" value="" placeholder="Leader name…" onblur="updateLeader(1, this.value)">
+        </div>
+        <div class="field-group">
+          <label>Rating</label>
+          <select id="div2-rating" onchange="updateDivRating(1, this.value)">
+            <option value="Normal" selected>Normal</option>
+            <option value="Exceptional">Exceptional</option>
+          </select>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Divisions -->
+  <div class="section-head"><div class="dot"></div>Brigades</div>
+  <div class="divisions-area" id="divisions-area">
+    <!-- Injected by JS -->
+  </div>
+
+  <!-- Summary Cards -->
+  <div class="section-head"><div class="dot"></div>Army Summary</div>
+  <div class="summary-area">
+    <div class="summary-grid" id="summary-grid"><!-- injected --></div>
+  </div>
+
+  <!-- Brigade Cards -->
+  <div class="section-head"><div class="dot"></div>Brigade Cards</div>
+  <div class="brigade-cards-area">
+    <div class="brigade-cards-grid" id="cards-grid"><!-- injected --></div>
+  </div>
+
+</div><!-- /main-panel -->
+
+<footer>Fire &amp; Fury Rules System · ACW Brigade Builder · For hobby use only</footer>
+</div>
+
+<div id="loading-overlay" class="loading-overlay">
+  <div class="loading-box">
+    <span class="loading-spinner"></span>
+    <span>Loading morale data…</span>
+  </div>
+</div>
+
+<div id="error-overlay" class="error-overlay hidden">
+  <div class="error-box">
+    <div style="font-size:1rem; font-weight:800; color:var(--crimson);">Unable to load morale data</div>
+    <div id="error-message" style="font-size:0.9rem; color:var(--ink-faded); max-width:320px;">
+      The application is using fallback values. Please retry or continue.
+    </div>
+    <div class="error-actions">
+      <button onclick="retryLoadMoraleData()">Retry</button>
+      <button onclick="hideError()">Continue</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reset confirmation modal -->
+<div class="modal-overlay" id="reset-modal" onclick="hideResetModal(event)">
+  <div class="modal-box">
+    <div class="modal-icon">⚑</div>
+    <h3>Reset Army?</h3>
+    <p>This will clear all division leader names and every brigade's details — name, size, type, weapon, rating, and morale. Army configuration settings will be kept.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="hideResetModal()">Cancel</button>
+      <button class="modal-confirm" onclick="confirmReset()">Reset Army</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// DATA LOOKUPS
+// ============================================================
+const PERIOD_HINTS = {
+  Union: 'Damn Yanks!',
+  Confederates: 'Gray & Butternut'
+};
+
+const HIST_MODIFIER = {
+  Union:         { Early: 0, Mid: 2, Late: 1 },
+  Confederates:  { Early: 2, Mid: 1, Late: 0 }
+};
+
+const WEAPONS = {
+  Infantry: ['Repeater (RP)', 'Rifle Musket (RM)', 'Mixed Muskets (MM)', 'Smoothbore Musket (SM)'],
+  Cavalry:  ['Repeater (RP)', 'Breechloader (BL)', 'Rifle & Carbine (RC)', 'Shotgun & Hunting Rifle (SH)'],
+  Artillery:['Heavy Rifle (HR)', 'Light Rifle (LR)', 'Rifle & Napoleon (RN)', 'Rifle & Smoothbore (RS)', 'Napoleon (NP)', 'Smoothbore (SB)']
+};
+
+const RATINGS = ['Green', 'Experienced', 'Veteran', 'Crack'];
+const TYPES   = ['Infantry', 'Cavalry', 'Artillery'];
+
+let MORALES = [];
+let EFF_TABLE = {};
+
+const DEFAULT_EFF_TABLE = {
+  Spirited:   {2:[2,0,1],3:[3,0,1],4:[4,2,1],5:[5,3,2],6:[6,4,2],7:[7,5,3],8:[8,6,3],9:[9,7,4],10:[10,8,4],11:[11,8,5],12:[12,8,5],13:[13,9,6],14:[14,10,6],15:[15,11,7],16:[16,11,7],17:[17,12,8],18:[18,13,8],19:[19,14,9],20:[20,14,9]},
+  Reliable:   {2:[2,0,1],3:[3,2,1],4:[4,3,2],5:[5,4,3],6:[6,5,3],7:[7,6,4],8:[8,6,4],9:[9,7,5],10:[10,8,5],11:[11,9,6],12:[12,9,6],13:[13,10,7],14:[14,11,7],15:[15,12,8],16:[16,12,8],17:[17,13,9],18:[18,14,9],19:[19,15,10],20:[20,15,10]},
+  Unreliable: {2:[2,0,1],3:[3,0,2],4:[4,0,3],5:[5,0,4],6:[6,5,4],7:[7,6,5],8:[8,7,6],9:[9,8,7],10:[10,9,7],11:[11,10,8],12:[12,10,8],13:[13,11,9],14:[14,12,9],15:[15,13,10],16:[16,13,10],17:[17,14,11],18:[18,15,11],19:[19,16,12],20:[20,16,12]},
+  Dispirited: {2:[2,0,1],3:[3,0,2],4:[4,0,3],5:[5,0,4],6:[6,0,5],7:[7,0,6],8:[8,0,7],9:[9,0,8],10:[10,0,9],11:[11,0,10],12:[12,11,11],13:[13,12,11],14:[14,13,12],15:[15,14,13],16:[16,15,14],17:[17,16,15],18:[18,17,16],19:[19,18,17],20:[20,19,18]}
+};
+
+function parseMoraleJson(data) {
+  const table = {};
+  const order = [];
+  let currentMorale = null;
+  let nextBase = 2;
+
+  data.forEach(item => {
+    if (item.Morale !== currentMorale) {
+      currentMorale = item.Morale;
+      table[currentMorale] = {};
+      order.push(currentMorale);
+      nextBase = 2;
+    }
+    table[currentMorale][nextBase] = [item.Fresh, item.Worn, item.Spent];
+    nextBase += 1;
+  });
+
+  return { table, order };
+}
+
+async function loadMoraleData() {
+  try {
+    const response = await fetch('FnFMorale.json');
+    if (!response.ok) throw new Error(`Failed to load FnFMorale.json: ${response.status}`);
+    const data = await response.json();
+    const parsed = parseMoraleJson(data);
+    EFF_TABLE = parsed.table;
+    MORALES = parsed.order.length ? parsed.order : Object.keys(EFF_TABLE);
+    hideError();
+    return true;
+  } catch (error) {
+    console.warn('Unable to load morale values from FnFMorale.json, falling back to built-in table.', error);
+    EFF_TABLE = DEFAULT_EFF_TABLE;
+    MORALES = Object.keys(DEFAULT_EFF_TABLE);
+    showError('Unable to load FnFMorale.json. Using fallback morale values.');
+    return false;
+  }
+}
+
+function showLoading(message = 'Loading morale data…') {
+  const overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
+  const text = overlay.querySelector('span:last-child');
+  if (text) text.textContent = message;
+  overlay.classList.remove('hidden');
+}
+
+function hideLoading() {
+  const overlay = document.getElementById('loading-overlay');
+  if (!overlay) return;
+  overlay.classList.add('hidden');
+}
+
+function showError(message) {
+  hideLoading();
+  const overlay = document.getElementById('error-overlay');
+  if (!overlay) return;
+  const messageEl = document.getElementById('error-message');
+  if (messageEl) messageEl.textContent = message;
+  overlay.classList.remove('hidden');
+}
+
+function hideError() {
+  const overlay = document.getElementById('error-overlay');
+  if (!overlay) return;
+  overlay.classList.add('hidden');
+}
+
+async function retryLoadMoraleData() {
+  showLoading('Retrying morale data load…');
+  hideError();
+  await loadMoraleData();
+  hideLoading();
+}
+
+// Rating effect on base count
+const RATING_MOD = { Crack: 2, Veteran: 1, Experienced: 0, Green: -1 };
+
+// Brigade effect rating used in display
+const EFFECT_LABEL = { Crack: 'Crack', Veteran: 'Veteran', Experienced: 'Experienced', Green: 'Green' };
+
+// ============================================================
+// STATE
+// ============================================================
+const NUM_BRIGADES = 10;
+const NUM_DIVS = 2;
+
+let divisions = [];
+
+function makeBrigade(n) {
+  return {
+    name: n <= 4 ? `${n}${ordinal(n)} Brigade` : '',
+    type: '',
+    weapon: '',
+    rating: '',
+    morale: '',
+    histSize: 0,
+  };
+}
+
+function ordinal(n) {
+  return ['','1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th'][n]||n+'th';
+}
+
+function initState() {
+  divisions = [1, 2].map(() => ({
+    leaderName: '',
+    leaderRating: 'Normal',
+    brigades: [{ name: '', type: '', weapon: '', rating: '', morale: '', histSize: 0 }]
+  }));
+}
+
+// ============================================================
+// CALCULATIONS
+// ============================================================
+function getGlobals() {
+  return {
+    army:   document.getElementById('g-army').value,
+    period: document.getElementById('g-period').value.split(' ')[0], // 'Early','Mid','Late'
+    scale:  parseInt(document.getElementById('g-scale').value),
+  };
+}
+
+function calcBases(brigade, globals) {
+  const { army, period, scale } = globals;
+  if (!brigade.type || !brigade.histSize || brigade.histSize <= 0) return null;
+
+  const hmod = HIST_MODIFIER[army]?.[period] ?? 0;
+  const rmod = RATING_MOD[brigade.rating] ?? 0;
+  const raw = brigade.histSize / scale;
+  const bases = Math.max(1, Math.round(raw + hmod + rmod));
+  return Math.min(bases, 20);
+}
+
+function calcEffectiveness(brigade, globals) {
+  const bases = calcBases(brigade, globals);
+  if (!bases || !brigade.morale) return null;
+  const row = EFF_TABLE[brigade.morale]?.[bases];
+  if (!row) return null;
+  return { fresh: row[0], worn: row[1], spent: row[2], bases };
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function renderDivisions() {
+  const area = document.getElementById('divisions-area');
+  area.innerHTML = '';
+  const g = getGlobals();
+
+  divisions.forEach((div, di) => {
+    const divName = `Division ${di === 0 ? 'One' : 'Two'}`;
+    const leaderId = `div${di+1}-leader`;
+    const ratingId = `div${di+1}-rating`;
+
+    const block = document.createElement('div');
+    block.className = 'division-block';
+
+    // Division header
+    const leaderVal = div.leaderName || '';
+    const ratingVal = div.leaderRating || 'Normal';
+    block.innerHTML = `
+      <div class="division-header">
+        <h3>${divName}</h3>
+        <span style="color:var(--gold-light);font-size:0.75rem;letter-spacing:0.06em;">Leader:</span>
+        <input type="text" style="max-width:160px" value="${leaderVal}" onblur="updateLeader(${di}, this.value)" placeholder="Leader name…">
+        <span style="color:var(--gold-light);font-size:0.75rem;margin-left:8px">Rating:</span>
+        <select onchange="updateDivRating(${di}, this.value)" style="max-width:110px">
+          <option value="Normal" ${ratingVal==='Normal'?'selected':''}>Normal</option>
+          <option value="Exceptional" ${ratingVal==='Exceptional'?'selected':''}>Exceptional</option>
+        </select>
+      </div>
+      <div class="brigade-table-wrap">${buildTable(div.brigades, di, g)}</div>
+      <div class="add-brigade-bar">
+        <button class="btn-add-brigade" onclick="addBrigade(${di})">+ Add Brigade</button>
+      </div>
+    `;
+    area.appendChild(block);
+  });
+}
+
+function buildTable(brigades, di, g) {
+  let rows = brigades.map((b, bi) => buildRow(b, di, bi, g)).join('');
+  return `
+    <table class="brigade-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th style="text-align:left;min-width:110px">Name</th>
+          <th>Hist. Size</th>
+          <th>Type</th>
+          <th>Weapon</th>
+          <th>Rating</th>
+          <th>Morale</th>
+          <th style="background:rgba(26,107,26,0.12)">Fresh</th>
+          <th style="background:rgba(139,90,0,0.1)">Worn</th>
+          <th style="background:rgba(139,26,26,0.12)">Spent</th>
+          <th style="background:rgba(26,58,92,0.12)">Bases</th>
+          <th style="width:32px"></th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+function buildRow(b, di, bi, g) {
+  const eff = calcEffectiveness(b, g);
+  const freshCell  = eff ? `<td class="stat-cell stat-fresh">${eff.fresh}</td>` : `<td class="stat-invalid">—</td>`;
+  const wornCell   = eff ? `<td class="stat-cell stat-worn">${eff.worn}</td>`  : `<td class="stat-invalid">—</td>`;
+  const spentCell  = eff ? `<td class="stat-cell stat-spent">${eff.spent}</td>`  : `<td class="stat-invalid">—</td>`;
+  const basesCell  = eff ? `<td class="stat-cell stat-bases">${eff.bases}</td>`  : `<td class="stat-invalid">—</td>`;
+
+  const weapOpts = b.type ? WEAPONS[b.type].map(w =>
+    `<option value="${w}" ${b.weapon===w?'selected':''}>${w}</option>`
+  ).join('') : `<option value="">—</option>`;
+
+  const typeOpts  = ['', ...TYPES].map(t => `<option value="${t}" ${b.type===t?'selected':''}>${t||'—'}</option>`).join('');
+  const rateOpts  = ['', ...RATINGS].map(r => `<option value="${r}" ${b.rating===r?'selected':''}>${r||'—'}</option>`).join('');
+  const morOpts   = ['', ...MORALES].map(m => `<option value="${m}" ${b.morale===m?'selected':''}>${m||'—'}</option>`).join('');
+
+  return `<tr>
+    <td>${bi+1}</td>
+    <td><input type="text" value="${b.name}" placeholder="Name…" onblur="setBrigade(${di},${bi},'name',this.value)" style="min-width:100px"></td>
+    <td><input type="number" value="${b.histSize||''}" min="0" max="9999" placeholder="0" onblur="setBrigade(${di},${bi},'histSize',+this.value)" style="min-width:72px;max-width:90px"></td>
+    <td><select onchange="setType(${di},${bi},this.value)">${typeOpts}</select></td>
+    <td><select onchange="setBrigade(${di},${bi},'weapon',this.value)">${weapOpts}</select></td>
+    <td><select onchange="setBrigade(${di},${bi},'rating',this.value)">${rateOpts}</select></td>
+    <td><select onchange="setBrigade(${di},${bi},'morale',this.value)">${morOpts}</select></td>
+    ${freshCell}${wornCell}${spentCell}${basesCell}
+    <td><button class="btn-delete-row" onclick="deleteBrigade(${di},${bi})" title="Remove brigade">&#10005;</button></td>
+  </tr>`;
+}
+
+function renderSummary() {
+  const g = getGlobals();
+  const grid = document.getElementById('summary-grid');
+  grid.innerHTML = '';
+
+  let totalBases = 0, totalFresh = 0, totalWorn = 0, totalSpent = 0, count = 0;
+
+  divisions.forEach((div, di) => {
+    let divBases = 0, divFresh = 0, divWorn = 0, divSpent = 0, divCount = 0;
+    div.brigades.forEach(b => {
+      const eff = calcEffectiveness(b, g);
+      if (!eff) return;
+      divBases += eff.bases; divFresh += eff.fresh; divWorn += eff.worn; divSpent += eff.spent; divCount++;
+    });
+    totalBases += divBases; totalFresh += divFresh; totalWorn += divWorn; totalSpent += divSpent; count += divCount;
+
+    if (divCount === 0) return;
+
+    const divName = di === 0 ? 'Division One' : 'Division Two';
+    const card = document.createElement('div');
+    card.className = 'summary-card';
+    card.innerHTML = `
+      <div class="summary-card-head">${divName}</div>
+      <div class="summary-card-body">
+        <div class="stat-row"><span>Brigades</span><span class="val blue">${divCount}</span></div>
+        <div class="stat-row"><span>Total Bases</span><span class="val blue">${divBases}</span></div>
+        <div class="stat-row"><span>Fresh Effectiveness</span><span class="val green">${divFresh}</span></div>
+        <div class="stat-row"><span>Worn Effectiveness</span><span class="val amber">${divWorn}</span></div>
+        <div class="stat-row"><span>Spent Effectiveness</span><span class="val red">${divSpent}</span></div>
+      </div>`;
+    grid.appendChild(card);
+  });
+
+  if (count > 0) {
+    const total = document.createElement('div');
+    total.className = 'summary-card';
+    total.innerHTML = `
+      <div class="summary-card-head" style="background:var(--union-blue);">Corps Total — ${g.army}</div>
+      <div class="summary-card-body">
+        <div class="stat-row"><span>Active Brigades</span><span class="val blue">${count}</span></div>
+        <div class="stat-row"><span>Total Bases</span><span class="val blue">${totalBases}</span></div>
+        <div class="stat-row"><span>Fresh Effectiveness</span><span class="val green">${totalFresh}</span></div>
+        <div class="stat-row"><span>Worn Effectiveness</span><span class="val amber">${totalWorn}</span></div>
+        <div class="stat-row"><span>Spent Effectiveness</span><span class="val red">${totalSpent}</span></div>
+      </div>`;
+    grid.appendChild(total);
+  }
+}
+
+function renderCards() {
+  const g = getGlobals();
+  const grid = document.getElementById('cards-grid');
+  grid.innerHTML = '';
+
+  divisions.forEach((div, di) => {
+    div.brigades.forEach((b, bi) => {
+      const eff = calcEffectiveness(b, g);
+      if (!eff || !b.name) return;
+
+      const typeClass = (b.type||'infantry').toLowerCase();
+      const divLabel = di === 0 ? 'Div I' : 'Div II';
+      const card = document.createElement('div');
+      card.className = 'bcard';
+      card.innerHTML = `
+        <div class="bcard-head ${typeClass}">
+          <span class="bcard-name">${b.name}</span>
+          <span class="bcard-type">${divLabel} · ${b.type||''}</span>
+        </div>
+        <div class="bcard-stats">
+          <div class="bcard-stat">
+            <span class="bcard-stat-label">Fresh</span>
+            <span class="bcard-stat-val green">${eff.fresh}</span>
+          </div>
+          <div class="bcard-stat">
+            <span class="bcard-stat-label">Worn</span>
+            <span class="bcard-stat-val amber">${eff.worn}</span>
+          </div>
+          <div class="bcard-stat">
+            <span class="bcard-stat-label">Spent</span>
+            <span class="bcard-stat-val red">${eff.spent}</span>
+          </div>
+        </div>
+        <div class="bcard-footer">
+          <span>${b.rating||'?'} · ${b.morale||'?'}</span>
+          <span>${b.weapon||''}</span>
+          <span class="bcard-bases">${eff.bases} bases</span>
+        </div>`;
+      grid.appendChild(card);
+    });
+  });
+
+  if (!grid.children.length) {
+    grid.innerHTML = '<div style="color:var(--ink-faded);font-style:italic;font-size:0.85rem;grid-column:1/-1;padding:12px 0">Fill in brigade details above to generate cards.</div>';
+  }
+}
+
+function highlightModifiers() {
+  const g = getGlobals();
+  const periods = ['e','m','l'];
+  const periodMap = { Early:'e', Mid:'m', Late:'l' };
+  const sides = ['u','c'];
+
+  sides.forEach(s => periods.forEach(p => {
+    const el = document.getElementById(`m-${s}-${p}`);
+    if (el) el.classList.remove('highlight-cell');
+  }));
+
+  const pCode = periodMap[g.period] || 'm';
+  const sCode = g.army === 'Union' ? 'u' : 'c';
+  const el = document.getElementById(`m-${sCode}-${pCode}`);
+  if (el) el.classList.add('highlight-cell');
+}
+
+// ============================================================
+// EVENT HANDLERS
+// ============================================================
+function setBrigade(di, bi, field, val) {
+  divisions[di].brigades[bi][field] = val;
+  updateAll();
+}
+
+function setType(di, bi, val) {
+  divisions[di].brigades[bi].type = val;
+  divisions[di].brigades[bi].weapon = ''; // reset weapon
+  updateAll();
+}
+
+function updateLeader(di, val) {
+  divisions[di].leaderName = val;
+  // also keep the static leader card input in sync
+  const el = document.getElementById(`div${di+1}-leader`);
+  if (el) el.value = val;
+}
+
+function updateDivRating(di, val) {
+  divisions[di].leaderRating = val;
+  const el = document.getElementById(`div${di+1}-rating`);
+  if (el) el.value = val;
+}
+
+function updateAll() {
+  const armySel = document.getElementById('g-army').value;
+  document.getElementById('army-hint').textContent = PERIOD_HINTS[armySel];
+  highlightModifiers();
+  renderDivisions();
+  renderSummary();
+  renderCards();
+}
+
+// ============================================================
+// SAVE CSV
+// ============================================================
+function saveCSV() {
+  const g = getGlobals();
+  const corpLeader = document.getElementById('g-corp').value || '';
+  const period = document.getElementById('g-period').value;
+  const theatre = document.getElementById('g-theatre').value;
+  const scale = g.scale;
+
+  const esc = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+
+  const rows = [];
+
+  // Header block
+  rows.push(['Fire & Fury — Brigade Army Builder']);
+  rows.push(['Army', g.army, 'Period', period, 'Theatre', theatre, 'Scale', scale]);
+  rows.push(['Corp Leader', corpLeader]);
+  rows.push([]);
+
+  // Brigade rows
+  rows.push([
+    'Division', 'Division Leader', 'Leader Rating',
+    'Brigade #', 'Brigade Name', 'Type', 'Historical Size',
+    'Weapon', 'Rating', 'Morale',
+    'Bases', 'Fresh', 'Worn', 'Spent'
+  ]);
+
+  divisions.forEach((div, di) => {
+    const divLabel = di === 0 ? 'Division One' : 'Division Two';
+    const leaderName = div.leaderName || '';
+    const leaderRating = div.leaderRating || '';
+
+    div.brigades.forEach((b, bi) => {
+      // Only include rows that have at least a type or name entered
+      if (!b.type && !b.name) return;
+      const eff = calcEffectiveness(b, g);
+      rows.push([
+        divLabel, leaderName, leaderRating,
+        bi + 1, b.name, b.type, b.histSize || '',
+        b.weapon, b.rating, b.morale,
+        eff ? eff.bases : '', eff ? eff.fresh : '', eff ? eff.worn : '', eff ? eff.spent : ''
+      ]);
+    });
+  });
+
+  // Summary block
+  rows.push([]);
+  rows.push(['— Summary —']);
+  rows.push(['Division', 'Brigades', 'Total Bases', 'Fresh', 'Worn', 'Spent']);
+
+  let grandBrigades = 0, grandBases = 0, grandFresh = 0, grandWorn = 0, grandSpent = 0;
+  divisions.forEach((div, di) => {
+    const divLabel = di === 0 ? 'Division One' : 'Division Two';
+    let count = 0, bases = 0, fresh = 0, worn = 0, spent = 0;
+    div.brigades.forEach(b => {
+      const eff = calcEffectiveness(b, g);
+      if (!eff) return;
+      count++; bases += eff.bases; fresh += eff.fresh; worn += eff.worn; spent += eff.spent;
+    });
+    if (count > 0) {
+      rows.push([divLabel, count, bases, fresh, worn, spent]);
+      grandBrigades += count; grandBases += bases; grandFresh += fresh; grandWorn += worn; grandSpent += spent;
+    }
+  });
+  if (grandBrigades > 0) {
+    rows.push(['Corps Total', grandBrigades, grandBases, grandFresh, grandWorn, grandSpent]);
+  }
+
+  // Build CSV string
+  const csv = rows.map(r => r.map(esc).join(',')).join('\r\n');
+
+  // Trigger download
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const filename = `FF_${g.army}_Army_${new Date().toISOString().slice(0,10)}.csv`;
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function addBrigade(di) {
+  divisions[di].brigades.push({ name: '', type: '', weapon: '', rating: '', morale: '', histSize: 0 });
+  updateAll();
+}
+
+function deleteBrigade(di, bi) {
+  if (divisions[di].brigades.length <= 1) return; // always keep at least 1 row
+  divisions[di].brigades.splice(bi, 1);
+  updateAll();
+}
+
+// ============================================================
+// RESET
+// ============================================================
+function showResetModal() {
+  document.getElementById('reset-modal').classList.add('active');
+}
+
+function hideResetModal(e) {
+  // If called from overlay click, only close if clicking the overlay itself
+  if (e && e.target !== document.getElementById('reset-modal')) return;
+  document.getElementById('reset-modal').classList.remove('active');
+}
+
+function confirmReset() {
+  // Clear division leaders
+  document.getElementById('div1-leader').value = '';
+  document.getElementById('div2-leader').value = '';
+  document.getElementById('div1-rating').value = 'Normal';
+  document.getElementById('div2-rating').value = 'Normal';
+
+  // Reset all brigade data to single blank row, clearing leader state too
+  divisions = [1, 2].map(() => ({
+    leaderName: '',
+    leaderRating: 'Normal',
+    brigades: [{ name: '', type: '', weapon: '', rating: '', morale: '', histSize: 0 }]
+  }));
+
+  document.getElementById('reset-modal').classList.remove('active');
+  updateAll();
+}
+
+// ============================================================
+// INIT
+// ============================================================
+async function initApp() {
+  showLoading();
+  await loadMoraleData();
+  initState();
+
+  const params = new URLSearchParams(window.location.search);
+  const side = params.get('side') || (function(){ try { return sessionStorage.getItem('ff_side'); } catch(e){ return null; } })();
+  if (side === 'Union' || side === 'Confederates') {
+    document.getElementById('g-army').value = side;
+  }
+
+  updateAll();
+  hideLoading();
+}
+
+initApp();
+</script>
+</body>
+</html>
