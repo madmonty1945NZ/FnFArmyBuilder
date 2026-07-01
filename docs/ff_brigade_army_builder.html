@@ -753,9 +753,11 @@
     <span>Follow the numbered steps <strong>①②③...</strong> to configure your army. Cells marked in yellow are calculated automatically.
     For a 6×4 table (2–3 players) use Scale <strong>150</strong>. Larger tables use <strong>200–250</strong>.
     Scale and Period directly affect base counts.</span>
-    <div style="display:flex;gap:8px;flex-shrink:0">
+    <div style="display:flex;gap:8px;flex-shrink:0;align-items:center">
       <button class="btn-reset btn-save" onclick="saveCSV()" title="Download army details as CSV">&#8595; Save CSV</button>
+      <button class="btn-reset btn-save" onclick="document.getElementById('csv-file-input').click()" title="Load a previously saved army CSV">&#8593; Load CSV</button>
       <button class="btn-reset" onclick="showResetModal()" title="Clear all division leaders and brigade details">&#10005; Reset Army</button>
+      <input id="csv-file-input" type="file" accept=".csv,text/csv" style="display:none" onchange="handleCSVFile(event)">
     </div>
   </div>
 
@@ -1364,6 +1366,9 @@ function saveCSV() {
     const leaderName = div.leaderName || '';
     const leaderRating = div.leaderRating || '';
 
+    // Preserve leader values even when no brigade rows are present.
+    rows.push([`${divLabel} Leader`, leaderName, leaderRating]);
+
     div.brigades.forEach((b, bi) => {
       // Only include rows that have at least a type or name entered
       if (!b.type && !b.name) return;
@@ -1416,6 +1421,161 @@ function saveCSV() {
   URL.revokeObjectURL(url);
 }
 
+function handleCSVFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    const text = reader.result;
+    if (typeof text === 'string') {
+      loadCSV(text);
+    }
+  };
+  reader.onerror = () => {
+    alert('Unable to read the selected CSV file.');
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function parseCSV(text) {
+  text = text.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+
+    if (inQuotes) {
+      if (char === '"') {
+        if (text[i + 1] === '"') {
+          cell += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cell += char;
+      }
+      continue;
+    }
+
+    if (char === '"') {
+      inQuotes = true;
+      continue;
+    }
+
+    if (char === ',') {
+      row.push(cell);
+      cell = '';
+      continue;
+    }
+
+    if (char === '\n') {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+      continue;
+    }
+
+    cell += char;
+  }
+
+  row.push(cell);
+  rows.push(row);
+  return rows;
+}
+
+function loadCSV(csvText) {
+  const rows = parseCSV(csvText);
+  if (!rows.length) return;
+
+  const settings = {};
+  let headerIndex = -1;
+  let summaryIndex = rows.findIndex(r => r[0] && r[0].trim() === '— Summary —');
+
+  const loadedDivisions = [
+    { leaderName: '', leaderRating: 'Normal', brigades: [] },
+    { leaderName: '', leaderRating: 'Normal', brigades: [] }
+  ];
+
+  rows.forEach((row, index) => {
+    const key = (row[0] || '').trim();
+    if (key === 'Army') {
+      settings.army = row[1] || '';
+      settings.period = row[3] || '';
+      settings.theatre = row[5] || '';
+      settings.scale = row[7] || '';
+    }
+    if (key === 'Corp Leader') {
+      settings.corp = row[1] || '';
+    }
+    if (key === 'Division One Leader') {
+      loadedDivisions[0].leaderName = row[1] || loadedDivisions[0].leaderName;
+      loadedDivisions[0].leaderRating = row[2] || loadedDivisions[0].leaderRating;
+    }
+    if (key === 'Division Two Leader') {
+      loadedDivisions[1].leaderName = row[1] || loadedDivisions[1].leaderName;
+      loadedDivisions[1].leaderRating = row[2] || loadedDivisions[1].leaderRating;
+    }
+    if (key === 'Division' && row[3] === 'Brigade #') {
+      headerIndex = index;
+    }
+  });
+
+  if (settings.army) document.getElementById('g-army').value = settings.army;
+  if (settings.period) document.getElementById('g-period').value = settings.period;
+  if (settings.theatre) document.getElementById('g-theatre').value = settings.theatre;
+  if (settings.scale) document.getElementById('g-scale').value = settings.scale;
+  if (settings.corp !== undefined) document.getElementById('g-corp').value = settings.corp;
+
+
+  if (headerIndex >= 0) {
+    const start = headerIndex + 1;
+    const end = summaryIndex >= 0 ? summaryIndex : rows.length;
+
+    for (let i = start; i < end; i++) {
+      const row = rows[i];
+      if (!row || row.length < 10) continue;
+      const divName = (row[0] || '').trim();
+      const index = divName === 'Division One' ? 0 : divName === 'Division Two' ? 1 : -1;
+      if (index < 0) continue;
+
+      const leaderName = (row[1] || '').trim();
+      const leaderRating = (row[2] || '').trim() || 'Normal';
+      const brigade = {
+        name: (row[4] || '').trim(),
+        type: (row[5] || '').trim(),
+        histSize: Number(row[6] || 0) || 0,
+        weapon: (row[7] || '').trim(),
+        rating: (row[8] || '').trim(),
+        morale: (row[9] || '').trim(),
+      };
+
+      if (leaderName) {
+        loadedDivisions[index].leaderName = leaderName;
+      }
+      loadedDivisions[index].leaderRating = leaderRating || loadedDivisions[index].leaderRating;
+
+      // Only restore rows with meaningful brigade data.
+      if (brigade.name || brigade.type || brigade.histSize) {
+        loadedDivisions[index].brigades.push(brigade);
+      }
+    }
+  }
+
+  // Ensure each division has at least one blank brigade row.
+  loadedDivisions.forEach(div => {
+    if (!div.brigades.length) div.brigades.push({ name: '', type: '', weapon: '', rating: '', morale: '', histSize: 0 });
+  });
+
+  divisions = loadedDivisions;
+  updateAll();
+}
+
 function addBrigade(di) {
   divisions[di].brigades.push({ name: '', type: '', weapon: '', rating: '', morale: '', histSize: 0 });
   updateAll();
@@ -1446,6 +1606,7 @@ function confirmReset() {
   document.getElementById('div2-leader').value = '';
   document.getElementById('div1-rating').value = 'Normal';
   document.getElementById('div2-rating').value = 'Normal';
+  document.getElementById('g-corp').value = '';
 
   // Reset all brigade data to single blank row, clearing leader state too
   divisions = [1, 2].map(() => ({
